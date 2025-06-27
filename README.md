@@ -22,3 +22,4 @@
 # TODO
 -   fix thermistor
 -   set up humidistat
+-   ADD FULL SCHEMATIC
