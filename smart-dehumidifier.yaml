@@ -1,0 +1,159 @@
+esphome:
+  name: smart-dehumidifier
+  friendly_name: Smart Dehumidifier
+
+esp32:
+  board: esp32-c3-devkitm-1
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "gzQTlE5NByLOAdYRbmeNBH0dYgnpZeHaOSdA9tXF0BA="
+
+ota:
+  - platform: esphome
+    password: "3a55ff720858579e9e7f280bae1157cf"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Smart-Dehumidifier"
+    password: "CodedByHuman"
+
+captive_portal:
+    
+
+sensor:
+#1
+  - platform: ntc
+    sensor: resistance_sensor1
+    calibration:
+      b_constant: 3950
+      reference_temperature: 25°C
+      reference_resistance: 10kOhm
+    name: NTC Temperature 1 BRKN
+
+
+  - platform: resistance
+    id: resistance_sensor1
+    sensor: source_sensor1
+    configuration: UPSTREAM
+    resistor: 10kOhm
+    name: Resistance Sensor
+  - platform: adc
+    id: source_sensor1
+    pin: 2
+#2
+  - platform: ntc
+    sensor: resistance_sensor2
+    calibration:
+      b_constant: 3950
+      reference_temperature: 25°C
+      reference_resistance: 10kOhm
+    name: NTC Temperature 2 BRKN
+
+
+  - platform: resistance
+    id: resistance_sensor2
+    sensor: source_sensor2
+    configuration: UPSTREAM
+    resistor: 10kOhm
+
+  - platform: adc
+    id: source_sensor2
+    pin: 3
+#3
+  - platform: ntc
+    sensor: resistance_sensor3
+    calibration:
+      b_constant: 3950
+      reference_temperature: 25°C
+      reference_resistance: 10kOhm
+    name: NTC Temperature 3 BRKN
+
+  - platform: resistance
+    id: resistance_sensor3
+    sensor: source_sensor3
+    configuration: UPSTREAM
+    resistor: 10kOhm
+
+  - platform: adc
+    id: source_sensor3
+    pin: 4
+# END NTC CONF
+  - platform: dht
+    model: DHT11
+    pin: GPIO0
+    humidity: 
+      name: outside air humidity
+    temperature: 
+      name: outside air temperature
+
+  - platform: pulse_counter
+    pin: 
+      number: GPIO6   # Connect to any input PIN on the ESP
+      mode: INPUT_PULLUP
+    unit_of_measurement: 'RPM'
+    id: fan_speed
+    name: Fan Speed 1
+    accuracy_decimals: 0
+    filters:
+      - multiply: 0.5 
+    update_interval: 1s
+
+  
+
+output:
+  - platform: ledc
+    id: fan_pwm
+    pin: GPIO10
+    frequency: "25000 Hz"
+    min_power: 0%
+    zero_means_zero: true
+
+
+fan:
+  - platform: speed
+    output: fan_pwm
+    name: "Dehumidifier Fan"
+    restore_mode: ALWAYS_ON
+    
+
+switch:
+  - platform: gpio
+    pin: GPIO1
+    inverted: False
+    id: relay_switch
+    name: "POWER"
+    restore_mode: ALWAYS_ON
+  
+    
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO7
+      mode: INPUT_PULLUP
+    name: "Full Switch"
+    filters:
+      - invert:
+    on_press:
+      then:
+        - switch.turn_off: relay_switch
+    on_release:
+      then:
+        - switch.turn_on: relay_switch
+
+
+
+button:
+  - platform: restart
+    name: System reboot
